@@ -1,75 +1,72 @@
-// context/AuthContext.js
+// context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '@/lib/firebase';
 import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    sendPasswordResetEmail,
-    updateProfile
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  updateProfile,
+  User,
+  sendEmailVerification,
 } from 'firebase/auth';
+import { auth } from '@/config/firebaseConfig';
 
-const AuthContext = createContext();
-
-export function useAuth() {
-    return useContext(AuthContext);
+// Define the shape of our context
+interface AuthContextType {
+  currentUser: User | null;
+  signup: (email: string, password: string, name: string) => Promise<any>;
+  sendVerificationEmail: () => Promise<void>;
 }
 
-export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+// Create context with default values
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  signup: async () => {},
+  sendVerificationEmail: async () => {},
+});
 
-    // Sign up with email and password
-    const signup = async (email, password, name) => {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, {
-            displayName: name
-        });
-        return userCredential;
-    };
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
-    // Login with email and password
-    const login = (email, password) => {
-        return signInWithEmailAndPassword(auth, email, password);
-    };
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
 
-    // Logout
-    const logout = () => {
-        return signOut(auth);
-    };
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    // Reset password
-    const resetPassword = (email) => {
-        return sendPasswordResetEmail(auth, email);
-    };
+  const signup = async (email: string, password: string, name: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCredential.user, {
+      displayName: name,
+    });
 
-    // Update profile
-    const updateUserProfile = (profileData) => {
-        return updateProfile(auth.currentUser, profileData);
-    };
+    // Send email verification
+    await sendEmailVerification(userCredential.user);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
-            setLoading(false);
-        });
+    return userCredential;
+  };
 
-        return unsubscribe;
-    }, []);
+  const sendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
+  };
 
-    const value = {
-        currentUser,
-        signup,
-        login,
-        logout,
-        resetPassword,
-        updateUserProfile
-    };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
 
-    return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+    return unsubscribe;
+  }, []);
+
+  const value = {
+    currentUser,
+    signup,
+    sendVerificationEmail,
+  };
+
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 }
