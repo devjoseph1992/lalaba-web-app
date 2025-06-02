@@ -643,7 +643,7 @@ const Registration: React.FC = () => {
                           }
                           value={formData.businessAddress}
                           onChange={handleChange}
-                          placeholder="803-1 Sitio Sapa Barangay Pag-asa"
+                          placeholder="Full Address"
                           required
                           className={baseInputClasses}
                       />
