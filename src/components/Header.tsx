@@ -31,9 +31,6 @@ const Header = () => {
           <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 font-medium">
             How It Works
           </a>
-          <a href="#pricing" className="text-gray-600 hover:text-blue-600 font-medium">
-            Pricing
-          </a>
           <a href="#testimonials" className="text-gray-600 hover:text-blue-600 font-medium">
             Testimonials
           </a>
